@@ -1,3 +1,5 @@
+package in.xnnyygn.scala99
+
 object P01 {
 
   def last[A](xs: List[A]): Option[A] = lastRecursively(xs)
@@ -10,7 +12,7 @@ object P01 {
   def lastRecursively[A](xs: List[A]): Option[A] = xs match {
     case Nil => None
     case x :: Nil => Some(x)
-    case _ :: xs => lastRecursively(xs)
+    case _ :: tail => lastRecursively(tail)
   }
 
 }

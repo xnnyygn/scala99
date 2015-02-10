@@ -1,3 +1,5 @@
+package in.xnnyygn.scala99
+
 import org.specs2.mutable._
 
 class P01Test extends Specification {
