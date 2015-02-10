@@ -4,7 +4,7 @@ import org.specs2.mutable._
 
 class P01Test extends Specification {
   
-  "P01 last" should {
+  "P01" should {
     "last element of [1, 2, 3] is 3" in {
       P01.last(List(1, 2, 3)) must_== Some(3)
     }

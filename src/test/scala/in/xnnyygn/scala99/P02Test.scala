@@ -4,7 +4,7 @@ import org.specs2.mutable._
 
 class P02Test extends Specification {
   
-  "P02 last" should {
+  "P02" should {
     "penultimate element of [1, 2, 3] is 2" in {
       P02.penultimate(List(1, 2, 3)) must_== Some(2)
     }
