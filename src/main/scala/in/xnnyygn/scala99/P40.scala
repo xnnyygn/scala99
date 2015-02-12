@@ -12,7 +12,7 @@ object P40 {
   }
 
   def goldbach(n: Int): Option[(Int, Int)] = {
-    P31.primes.takeWhile(_ < n / 2).find(a => P31.isPrime(n - a)) match {
+    P31.primes.tail.takeWhile(_ < n / 2).find(a => P31.isPrime(n - a)) match {
       case Some(a) => Some(a, n - a)
       case _ => None
     }
