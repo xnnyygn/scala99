@@ -26,7 +26,7 @@ object P41 {
   }.take(l).foreach(printGoldbach)*/
 
   def printGoldbachListLimited(r: Traversable[Int], min: Int): Unit = goldbachList(r).filter{
-    case (a, b) => a >= min && b >= min
+    case (a, _) => a >= min
   }.foreach(printGoldbach)
 
   def goldbachList(r: Traversable[Int]): List[(Int, Int)] = r.flatMap(P40.goldbach).toList
