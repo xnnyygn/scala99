@@ -9,19 +9,24 @@ object P50 {
 
   // method goes here
   def huffman(ks: List[(String, Int)]): List[(String, String)] = {
+    // not check wheter list length = 1
     val mh = MinHeap[AbstractNode](ks.map{case (k, f) => Leaf(k, f)})
+    // otherwise scala builtin priority queue
+    /* val mh = scala.collection.mutable.PriorityQueue[AbstractNode](
+      ks.map{case (k, f) => Leaf(k, f)}: _*)(
+      Ordering.by[AbstractNode, Int](n => -n.getFrequency)) */
     // println(mh)
 
     def decreaseNode(): Node = {
       val n = mh.size
       if(n <= 0) throw new IllegalStateException("illegal state of min heap")
-      else if(n == 1) mh.deleteMin.asInstanceOf[Node]
+      else if(n == 1) mh.dequeue.asInstanceOf[Node]
       else {
-        val a = mh.deleteMin
-        val b = mh.deleteMin
+        val a = mh.dequeue
+        val b = mh.dequeue
         val ab = Node(a, a.getFrequency + b.getFrequency, b)
         // println(s"insert node $ab")
-        mh.insert(ab)
+        mh.enqueue(ab)
         // println(mh)
         decreaseNode()
       }
@@ -29,8 +34,8 @@ object P50 {
 
     val huffmanTree = decreaseNode()
     val huffmanDict = encode(huffmanTree)
-    println(huffmanTree)
-    println(huffmanDict)
+    // println(huffmanTree)
+    // println(huffmanDict)
     ks.map{case (k, _) => (k, huffmanDict(k).mkString)}
   }
 
@@ -45,6 +50,9 @@ object P50 {
   class MinHeap[A <% Ordered[A]](private val array: Array[A]) {
     private var length = array.length
     def size: Int = length
+
+    def enqueue(x: A): Unit = insert(x)
+    def dequeue: A = deleteMin
 
     /**
      * Delete minimum element.
@@ -149,8 +157,10 @@ object P50 {
   /* def main(args: Array[String]): Unit = {
     val data = List(("a", 45), ("b", 13), ("c", 12), ("d", 16), ("e", 9), ("f", 5))
     println(data)
-    val result = huffman(data)
-    println(result)
+    val q = scala.collection.mutable.PriorityQueue[AbstractNode](
+      data.map{case (k, f) => Leaf(k, f)}: _*
+    )(Ordering.by[AbstractNode, Int](n => -n.getFrequency))
+    println(q.dequeueAll)
   } */
 
 }
