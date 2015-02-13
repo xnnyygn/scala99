@@ -8,6 +8,19 @@ sealed abstract class Tree[+T] {
 
 object Tree {
   def fromList[A <% Ordered[A]](xs: List[A]): Tree[A] = xs.foldLeft[Tree[A]](End)((acc, x) => acc.addValue(x))
+
+  def generateBalancedTree[A](n: Int, x: A): List[Tree[A]] = {
+    if(n == 0) List(End)
+    else if((n & 1) == 1) {
+      val subTrees = generateBalancedTree(n >> 1, x)
+      subTrees.flatMap(l => subTrees.map(r => Node(x, l, r)))
+    } else (for{
+      t1 <- generateBalancedTree((n - 1) >> 1, x)
+      t2 <- generateBalancedTree((n + 1) >> 1, x)
+    } yield List(Node(x, t1, t2), Node(x, t2, t1))).flatten
+  }
+
+  def symmetricBalancedTrees[A](n: Int, x: A): List[Tree[A]] = generateBalancedTree(n, x).filter(_.isSymmetric)
 }
 
 case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {

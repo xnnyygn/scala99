@@ -60,8 +60,10 @@ object P55 {
       // println(s"generate balance tree $n")
       def generateBalancedTreeR(m: Int): List[Tree[A]] = {
         if(m == 0) List(End)
-        else if((m & 1) == 1) generateBalancedTreeR(m >> 1).map(t => Node(x, t, t))
-        else (for{
+        else if((m & 1) == 1) {
+          val subTrees = generateBalancedTreeR(m >> 1)
+          subTrees.flatMap(l => subTrees.map(r => Node(x, l, r)))
+        } else (for{
           t1 <- generateBalancedTreeR((m - 1) >> 1)
           t2 <- generateBalancedTreeR((m + 1) >> 1)
         } yield List(Node(x, t1, t2), Node(x, t2, t1))).flatten
@@ -71,8 +73,8 @@ object P55 {
   }
 
   /* def main(args: Array[String]): Unit = {
-    println(Tree.generateBalancedTree(4, "x"))
-    println(Tree.generateBalancedTree(4, "y"))
+    println(Tree.generateBalancedTree(5, "x"))
+    println(Tree.cBalanced2(5, "y"))
     // println(Tree.cBalanced2(4, "x"))
   } */
 
