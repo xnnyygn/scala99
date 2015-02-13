@@ -21,6 +21,60 @@ object Tree {
   }
 
   def symmetricBalancedTrees[A](n: Int, x: A): List[Tree[A]] = generateBalancedTree(n, x).filter(_.isSymmetric)
+
+  def hbalTrees[A](h: Int, x: A): List[Tree[A]] = {
+    def pow2(n: Int): Int = {
+      if(n == 0) 1
+      else pow2(n - 1) << 1
+    }
+    def toBottomNodes(n: Int, l: Int): List[Tree[A]] = {
+      if(l == 0) Nil
+      else {
+        val node = if((n & 1) == 1) Node(x, End, End) else End
+        node :: toBottomNodes(n >> 1, l - 1)
+      }
+    }
+    def buildTree(ns: List[Tree[A]]): Tree[A] = ns.length match {
+      case 2 => Node(x, ns(0), ns(1))
+      case n => {
+        val (leftHalf, rightHalf) = ns.splitAt(n >> 1)
+        Node(x, buildTree(leftHalf), buildTree(rightHalf))
+      }
+    }
+    if(h == 1) List(Node(x, End, End))
+    else {
+      val l = pow2(h - 1)
+      (1 to pow2(l) - 1).toList.map(n => buildTree(toBottomNodes(n, l)))
+    }
+  }
+
+  def hbalTrees2[T](height: Int, value: T): List[Tree[T]] = height match {
+    case n if n < 1 => List(End)
+    case 1          => List(Node(value))
+    case _ => {
+      val fullHeight = hbalTrees(height - 1, value)
+      val short = hbalTrees(height - 2, value)
+      fullHeight.flatMap((l) => fullHeight.map((r) => Node(value, l, r))) :::
+      fullHeight.flatMap((f) => short.flatMap((s) => List(Node(value, f, s), Node(value, s, f))))
+    }
+  }
+
+  def hbalTrees3[A](h: Int, x: A): List[Tree[A]] = {
+    if(h < 1) List(End)
+    else if(h == 1) List(Node(x))
+    else {
+      val full = hbalTrees3(h - 1, x)
+      val less = hbalTrees3(h - 2, x)
+      full.flatMap(l => full.map(r => Node(x, l, r))) :::
+        full.flatMap(l => less.flatMap(r => List(Node(x, l, r), Node(x, r, l))))
+    }
+  }
+
+  /* def main(args: Array[String]): Unit = {
+    println(Tree.hbalTrees(3, "x"))
+    println(Tree.hbalTrees2(3, "x"))
+  } */
+
 }
 
 case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
