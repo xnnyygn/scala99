@@ -70,10 +70,10 @@ object P55 {
     }
   }
 
-  def main(args: Array[String]): Unit = {
+  /* def main(args: Array[String]): Unit = {
     println(Tree.generateBalancedTree(4, "x"))
     println(Tree.generateBalancedTree(4, "y"))
     // println(Tree.cBalanced2(4, "x"))
-  }
+  } */
 
 }
