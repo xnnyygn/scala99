@@ -4,6 +4,7 @@ sealed abstract class Tree[+T] {
   def mirrorTo[T](that: Tree[T]): Boolean
   def isSymmetric: Boolean
   def addValue[U >: T <% Ordered[U]](x: U): Tree[U]
+  def nodeCounts: Int
 }
 
 object Tree {
@@ -22,38 +23,17 @@ object Tree {
 
   def symmetricBalancedTrees[A](n: Int, x: A): List[Tree[A]] = generateBalancedTree(n, x).filter(_.isSymmetric)
 
-  def hbalTrees[A](h: Int, x: A): List[Tree[A]] = {
-    def pow2(n: Int): Int = {
-      if(n == 0) 1
-      else pow2(n - 1) << 1
-    }
-    def toBottomNodes(n: Int, l: Int): List[Tree[A]] = {
-      if(l == 0) Nil
-      else {
-        val node = if((n & 1) == 1) Node(x, End, End) else End
-        node :: toBottomNodes(n >> 1, l - 1)
-      }
-    }
-    def buildTree(ns: List[Tree[A]]): Tree[A] = ns.length match {
-      case 2 => Node(x, ns(0), ns(1))
-      case n => {
-        val (leftHalf, rightHalf) = ns.splitAt(n >> 1)
-        Node(x, buildTree(leftHalf), buildTree(rightHalf))
-      }
-    }
-    if(h == 1) List(Node(x, End, End))
-    else {
-      val l = pow2(h - 1)
-      (1 to pow2(l) - 1).toList.map(n => buildTree(toBottomNodes(n, l)))
-    }
+  private def pow2(n: Int): Int = {
+    if(n == 0) 1
+    else pow2(n - 1) << 1
   }
 
   def hbalTrees2[T](height: Int, value: T): List[Tree[T]] = height match {
     case n if n < 1 => List(End)
     case 1          => List(Node(value))
     case _ => {
-      val fullHeight = hbalTrees(height - 1, value)
-      val short = hbalTrees(height - 2, value)
+      val fullHeight = hbalTrees2(height - 1, value)
+      val short = hbalTrees2(height - 2, value)
       fullHeight.flatMap((l) => fullHeight.map((r) => Node(value, l, r))) :::
       fullHeight.flatMap((f) => short.flatMap((s) => List(Node(value, f, s), Node(value, s, f))))
     }
@@ -70,11 +50,25 @@ object Tree {
     }
   }
 
-  /* def main(args: Array[String]): Unit = {
-    println(Tree.hbalTrees(3, "x"))
-    println(Tree.hbalTrees2(3, "x"))
-  } */
+  def minHbalNodes(h: Int): Int = h match {
+    case 0 => 0
+    case 1 => 1
+    case _ => minHbalNodes(h - 1) + minHbalNodes(h - 2) + 1
+  }
+  def maxHbalNodes(h: Int): Int = pow2(h) - 1
+  def minHbalHeight(n: Int): Int = n match {
+    case 0 => 0
+    case 1 => 1
+    case _ => 1 + minHbalHeight(n >> 1)
+  }
+  def maxHbalHeight(n: Int): Int = Stream.from(1).takeWhile(h => minHbalNodes(h) <= n).last
+  def hbalTreesWithNodes[A](n: Int, x: A): List[Tree[A]] = {
+    List.range(minHbalHeight(n), maxHbalHeight(n) + 1).flatMap(hbalTrees3(_, x).filter(_.nodeCounts == n))
+  }
 
+  /* def main(args: Array[String]): Unit = {
+    println(hbalTreesWithNodes(4, "x"))
+  } */
 }
 
 case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
@@ -87,12 +81,14 @@ case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
     if(x < value) Node(value, left.addValue(x), right)
     else Node(value, left, right.addValue(x))
   }
+  def nodeCounts: Int = 1 + left.nodeCounts + right.nodeCounts
   override def toString = s"T($value $left $right)"
 }
 
 case object End extends Tree[Nothing] {
   def mirrorTo[T](that: Tree[T]): Boolean = that == End
   def isSymmetric: Boolean = true
+  def nodeCounts: Int = 0
   def addValue[U <% Ordered[U]](x: U): Tree[U] = Node(x, End, End)
   override def toString = "."
 }
