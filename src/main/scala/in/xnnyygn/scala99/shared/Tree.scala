@@ -7,6 +7,8 @@ sealed abstract class Tree[+T] {
   def nodeCounts: Int
   def leafCount: Int
   def leafList: List[T]
+  def internalList: List[T]
+  def atLevel(d: Int): List[T]
 }
 
 object Tree {
@@ -93,6 +95,14 @@ case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
     if(isLeaf) List(value)
     else left.leafList ::: right.leafList
   }
+  def internalList: List[T] = {
+    if(isLeaf) Nil
+    else value :: left.internalList ::: right.internalList
+  }
+  def atLevel(d: Int): List[T] = {
+    if(d == 1) List(value)
+    else left.atLevel(d - 1) ::: right.atLevel(d - 1)
+  }
   override def toString = s"T($value $left $right)"
 }
 
@@ -102,7 +112,9 @@ case object End extends Tree[Nothing] {
   def nodeCounts: Int = 0
   def addValue[U <% Ordered[U]](x: U): Tree[U] = Node(x, End, End)
   def leafCount: Int = 0
-  def leafList = Nil
+  def leafList   = Nil
+  def internalList = Nil
+  def atLevel(d: Int) = Nil
   override def toString = "."
 }
 
