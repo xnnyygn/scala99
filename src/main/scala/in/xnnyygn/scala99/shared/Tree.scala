@@ -5,6 +5,7 @@ sealed abstract class Tree[+T] {
   def isSymmetric: Boolean
   def addValue[U >: T <% Ordered[U]](x: U): Tree[U]
   def nodeCounts: Int
+  def leafCount: Int
 }
 
 object Tree {
@@ -82,6 +83,10 @@ case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
     else Node(value, left, right.addValue(x))
   }
   def nodeCounts: Int = 1 + left.nodeCounts + right.nodeCounts
+  def leafCount: Int = {
+    if(left == End && right == End) 1
+    else left.leafCount + right.leafCount
+  }
   override def toString = s"T($value $left $right)"
 }
 
@@ -90,6 +95,7 @@ case object End extends Tree[Nothing] {
   def isSymmetric: Boolean = true
   def nodeCounts: Int = 0
   def addValue[U <% Ordered[U]](x: U): Tree[U] = Node(x, End, End)
+  def leafCount: Int = 0
   override def toString = "."
 }
 
