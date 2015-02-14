@@ -70,9 +70,27 @@ object Tree {
     List.range(minHbalHeight(n), maxHbalHeight(n) + 1).flatMap(hbalTrees3(_, x).filter(_.nodeCounts == n))
   }
 
-  /* def main(args: Array[String]): Unit = {
-    println(hbalTreesWithNodes(4, "x"))
-  } */
+  def completeBinaryTree[A](n: Int, x: A): Tree[A] = {
+    def createNode(parentId: Int): Node[A] = {
+      val leftId = parentId * 2 + 1
+      val rightId = parentId * 2 + 2
+      val left = if(leftId < n) createNode(leftId) else End
+      val right = if(rightId < n) createNode(rightId) else End
+      Node(x, left, right)
+    }
+    createNode(0)
+  }
+
+  def completeBinaryTree2[T](nodes: Int, value: T): Tree[T] = {
+    def generateTree(addr: Int): Tree[T] =
+      if (addr > nodes) End
+      else Node(value, generateTree(2 * addr), generateTree(2 * addr + 1))
+    generateTree(1)
+  }
+
+  def main(args: Array[String]): Unit = {
+    println(completeBinaryTree(6, "x"))
+  }
 }
 
 case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
