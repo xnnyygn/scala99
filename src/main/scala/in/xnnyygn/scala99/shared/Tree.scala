@@ -9,6 +9,8 @@ sealed abstract class Tree[+T] {
   def leafList: List[T]
   def internalList: List[T]
   def atLevel(d: Int): List[T]
+
+  def layoutBinaryTree(x: Int, y: Int): (Tree[T], Int)
 }
 
 object Tree {
@@ -88,9 +90,12 @@ object Tree {
     generateTree(1)
   }
 
-  def main(args: Array[String]): Unit = {
-    println(completeBinaryTree(6, "x"))
-  }
+  /* def main(args: Array[String]): Unit = {
+    println(Node('a', Node('b', End, Node('c')), Node('d')).layoutBinaryTree)
+    val tree = Tree.fromList(List('n','k','m','c','a','h','g','e','u','p','s','q'))
+    println(tree)
+    println(tree.asInstanceOf[Node[Symbol]].layoutBinaryTree)
+  } */
 }
 
 case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
@@ -121,6 +126,13 @@ case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
     if(d == 1) List(value)
     else left.atLevel(d - 1) ::: right.atLevel(d - 1)
   }
+
+  def layoutBinaryTree: Tree[T] = layoutBinaryTree(1, 1)._1
+  def layoutBinaryTree(x: Int, y: Int): (Tree[T], Int) = {
+    val (left2, x2) = left.layoutBinaryTree(x, y + 1)
+    val (right2, x3) = right.layoutBinaryTree(x2 + 1, y + 1)
+    (new PositionedNode(value, left2, right2, x2, y), x3)
+  }
   override def toString = s"T($value $left $right)"
 }
 
@@ -133,9 +145,15 @@ case object End extends Tree[Nothing] {
   def leafList   = Nil
   def internalList = Nil
   def atLevel(d: Int) = Nil
+  def layoutBinaryTree(x: Int, y: Int) = (End, x)
   override def toString = "."
 }
 
 object Node {
   def apply[T](value: T): Node[T] = Node(value, End, End)
+}
+
+class PositionedNode[+T](override val value: T, override val left: Tree[T], override val right: Tree[T], x: Int, y: Int) extends Node[T](value, left, right) {
+  def getX = x
+  override def toString = s"T[$x,$y]($value $left $right)"
 }
