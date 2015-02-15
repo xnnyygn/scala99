@@ -17,6 +17,15 @@ sealed abstract class Tree[+T] {
   def layoutBinaryTree2(x: Int, y: Int, h: Int): Tree[T]
   def height: Int
   def leftMostDepth: Int
+
+  def collectionPositions: List[(Int, Int)] = collectionPositions(1, 1)
+  def collectionPositions(x: Int, y: Int): List[(Int, Int)]
+  def layoutBinaryTree3: Tree[T] = {
+    val rootX = bounds.map(_._1).reduceLeft(_ min _) * -1 + 1
+    layoutBinaryTree3(rootX, 1)
+  }
+  def layoutBinaryTree3(x: Int, y: Int): Tree[T]
+  def bounds: List[(Int,Int)]
 }
 
 object Tree {
@@ -94,7 +103,9 @@ object Tree {
   /* def main(args: Array[String]): Unit = {
     val t = Tree.fromList(List('n','k','m','c','a','e','d','g','u','p','q'))
     println(t)
-    println(t.asInstanceOf[Node[Symbol]].layoutBinaryTree2)
+    // println(t.asInstanceOf[Node[Symbol]].layoutBinaryTree2)
+    // println(t.collectionPositions)
+    println(t.layoutBinaryTree3)
   } */
 }
 
@@ -133,6 +144,30 @@ case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
     val (right2, x3) = right.layoutBinaryTree(x2 + 1, y + 1)
     (new PositionedNode(value, left2, right2, x2, y), x3)
   }
+  def bounds: List[(Int,Int)] = {
+    def lowerBounds: List[(Int, Int)] = (left.bounds, right.bounds) match {
+      case (Nil, Nil) => Nil // leaf
+      case (lb, Nil) => lb.map{case (a, b) => (a - 1, b - 1)} // move left 1
+      case (Nil, rb) => rb.map{case (c, d) => (c + 1, d + 1)} // move right 1
+      case (lb, rb) => {
+        // if has [a, c, b, d], get distance between c and b, default is zero, just add 1
+        val delta = lb.zip(rb).map{case ((a, b), (c, d)) => (b - c) / 2 + 1}.reduceLeft(_ max _)
+        lb.map(Some(_)).zipAll(rb.map(Some(_)), None, None).map{
+          case (Some((a, b)), Some((c, d))) => (a - delta, d + delta)
+          case (Some((a, b)), None) => (a - delta, b - delta)
+          case (None, Some((c, d))) => (c + delta, d + delta)
+          case _ => throw new IllegalStateException("should not be here") // just for compiler
+        }
+      }
+    }
+    (0, 0) :: lowerBounds
+  }
+  def layoutBinaryTree3(x: Int, y: Int): Tree[T] = bounds match {
+    case _ :: (bl, br) :: _ => new PositionedNode(value, 
+      left.layoutBinaryTree3(x + bl, y + 1),
+      right.layoutBinaryTree3(x + br, y + 1), x, y)
+    case _ => new PositionedNode(value, End, End, x, y)
+  }
   def height: Int = 1 + math.max(left.height, right.height)
   def leftMostDepth: Int = 1 + left.leftMostDepth
   def layoutBinaryTree2: Tree[T] = {
@@ -160,6 +195,10 @@ case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
     val (right2, x3) = right.layoutBinaryTree2b(x2 + delta, y + 1, h)
     (new PositionedNode(value, left2, right2, x2, y), x2 + 2 * delta)
   } */
+
+  def collectionPositions(x: Int, y: Int): List[(Int, Int)] = {
+    (x, y) :: left.collectionPositions(x - 1, y + 1) ::: right.collectionPositions(x + 1, y + 1)
+  }
   override def toString = s"T($value $left $right)"
 }
 
@@ -176,6 +215,9 @@ case object End extends Tree[Nothing] {
   def layoutBinaryTree2(x: Int, y: Int, h: Int): Tree[Nothing] = End
   def height: Int = 0
   def leftMostDepth: Int = 0
+  def collectionPositions(x: Int, y: Int) = Nil
+  def bounds: List[(Int,Int)] = Nil
+  def layoutBinaryTree3(x: Int, y: Int) = End
   override def toString = "."
 }
 
