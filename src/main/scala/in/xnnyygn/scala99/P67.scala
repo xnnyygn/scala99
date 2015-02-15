@@ -31,29 +31,30 @@ object P67 {
 
   object Tree {
     def preInTree[A](preorder: List[A], inorder: List[A]): Tree[A] = {
-      def splitB(x: A, inorder2: List[A]): (List[A], List[A]) = inorder2 match {
+      /* def splitB(x: A, inorder2: List[A]): (List[A], List[A]) = inorder2 match {
         case Nil => (Nil, Nil)
         case `x` :: tail => (Nil, tail)
         case h :: tail => {
           val (l, r) = splitB(x, tail)
           (h :: l, r)
         }
-      }
-      def splitA(lvs: Set[A], preorder2: List[A]): (List[A], List[A]) = preorder2 match {
+      } */
+      /* def splitA(lvs: Set[A], preorder2: List[A]): (List[A], List[A]) = preorder2 match {
         case Nil => (Nil, Nil)
         case h :: tail if !lvs.contains(h) => (Nil, preorder2)
         case h :: tail => {
           val (l, r) = splitA(lvs, tail)
           (h :: l, r)
         }
-      }
+      } */
       (preorder, inorder) match {
         case (Nil, Nil) => End
         case (a :: Nil, b :: Nil) if a == b => Node(a)
         case _ => {
           val x :: alr = preorder
-          val (bl, br) = splitB(x, inorder)
-          val (al, ar) = splitA(bl.toSet, alr)
+          // val (bl, br) = splitB(x, inorder)
+          val (bl, _ :: br) = inorder.span(_ != x)
+          val (al, ar) = alr.splitAt(bl.length)
           // println(s"$al $ar")
           // println(s"$bl $br")
           Node(x, preInTree(al, bl), preInTree(ar, br))
