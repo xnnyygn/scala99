@@ -8,6 +8,7 @@ object P67 {
     def inspect: String
     def preorder: List[A]
     def inorder: List[A]
+    def toDotstring: String
   }
   case class Node[+A](x: A, left: Tree[A] = End, right: Tree[A] = End) extends Tree[A] {
     def inspect: String = {
@@ -17,6 +18,11 @@ object P67 {
     }
     def preorder: List[A] =  x :: left.preorder ::: right.preorder
     def inorder: List[A] = left.inorder ::: x :: right.inorder
+    def toDotstring: String = {
+      val l = left.toDotstring
+      val r = right.toDotstring
+      s"$x$l$r"
+    }
     override def toString = {
       if(left == End && right == End) x.toString
       else s"$x($left,$right)"
@@ -26,6 +32,7 @@ object P67 {
     def inspect: String = "."
     def preorder = Nil
     def inorder = Nil
+    def toDotstring: String = "."
     override def toString = ""
   }
 
@@ -61,24 +68,25 @@ object P67 {
         }
       }
     }
-    // "a(b(d,e),c(,f(g,)))"
+
+    def parseConstantChar(cs: List[Char], c: Char): (Char, List[Char]) = cs match {
+      case `c` :: tail => (c, tail)
+      case _ => throw new IllegalArgumentException(s"expect char $c")
+    }
+    def parseOptionalChar(cs: List[Char], c: Char): (Option[Char], List[Char]) = cs match {
+      case `c` :: tail => (Some(c), tail)
+      case _ => (None, cs)
+    }
+    def parseChars(cs: List[Char], ds: Set[Char]): (List[Char], List[Char]) = cs match {
+      case Nil => (Nil, Nil)
+      case c :: _ if ds.contains(c) => (Nil, cs)
+      case c :: tail => {
+        val (s, cs) = parseChars(tail, ds)
+        (c :: s, cs)
+      }
+    }
     def fromString(s: String): Tree[Char] = {
-      def parseConstantChar(cs: List[Char], c: Char): (Char, List[Char]) = cs match {
-        case `c` :: tail => (c, tail)
-        case _ => throw new IllegalArgumentException(s"expect char $c")
-      }
-      def parseOptionalChar(cs: List[Char], c: Char): (Option[Char], List[Char]) = cs match {
-        case `c` :: tail => (Some(c), tail)
-        case _ => (None, cs)
-      }
-      def parseChars(cs: List[Char], ds: Set[Char]): (List[Char], List[Char]) = cs match {
-        case Nil => (Nil, Nil)
-        case c :: _ if ds.contains(c) => (Nil, cs)
-        case c :: tail => {
-          val (s, cs) = parseChars(tail, ds)
-          (c :: s, cs)
-        }
-      }
+      
       // 1 def tree = end | node
       // 2 def end  = <emptry string>
       // 3 def node = value | value ( tree , tree )
@@ -138,14 +146,36 @@ object P67 {
       } */
       parseTree(s.toList)._1
     }
+    // tree = node | end
+    // end  = .
+    // node = value node node
+    // value = !.
+    def fromDotString(s: String): Tree[Char] = {
+      def parseChar(cs: List[Char]): (Char, List[Char]) = cs match {
+        case c :: tail => (c, tail)
+        case _ => throw new IllegalArgumentException("expect char here")
+      }
+      def parseTree(cs: List[Char]): (Tree[Char], List[Char]) = {
+        if(cs.isEmpty) throw new IllegalArgumentException("expect tree")
+        parseChar(cs) match {
+          case ('.', cs2) => (End, cs2)
+          case (value, cs2) => {
+            val (left, cs3) = parseTree(cs2)
+            val (right, cs4) = parseTree(cs3)
+            (Node(value, left, right), cs4)
+          }
+        }
+      }
+      parseTree(s.toList)._1
+    }
   }
 
   /* def main(args: Array[String]): Unit = {
     val s = "a(b(d,e),c(,f(g,)))"
     println(s)
     val t = Tree.fromString(s)
-    println(t.inspect)
-    println(t.preorder)
-    println(t.inorder)
+    println(t.toDotstring)
+    val t2 = Tree.fromDotString(t.toDotstring)
+    println(t2) 
   } */
 }
