@@ -1,5 +1,8 @@
 package in.xnnyygn.scala99.shared
 
+import scala.math
+import in.xnnyygn.scala99.shared.Math.pow2
+
 sealed abstract class Tree[+T] {
   def mirrorTo[T](that: Tree[T]): Boolean
   def isSymmetric: Boolean
@@ -11,6 +14,9 @@ sealed abstract class Tree[+T] {
   def atLevel(d: Int): List[T]
 
   def layoutBinaryTree(x: Int, y: Int): (Tree[T], Int)
+  def layoutBinaryTree2(x: Int, y: Int, h: Int): Tree[T]
+  def height: Int
+  def leftMostDepth: Int
 }
 
 object Tree {
@@ -28,11 +34,6 @@ object Tree {
   }
 
   def symmetricBalancedTrees[A](n: Int, x: A): List[Tree[A]] = generateBalancedTree(n, x).filter(_.isSymmetric)
-
-  private def pow2(n: Int): Int = {
-    if(n == 0) 1
-    else pow2(n - 1) << 1
-  }
 
   def hbalTrees2[T](height: Int, value: T): List[Tree[T]] = height match {
     case n if n < 1 => List(End)
@@ -91,10 +92,9 @@ object Tree {
   }
 
   /* def main(args: Array[String]): Unit = {
-    println(Node('a', Node('b', End, Node('c')), Node('d')).layoutBinaryTree)
-    val tree = Tree.fromList(List('n','k','m','c','a','h','g','e','u','p','s','q'))
-    println(tree)
-    println(tree.asInstanceOf[Node[Symbol]].layoutBinaryTree)
+    val t = Tree.fromList(List('n','k','m','c','a','e','d','g','u','p','q'))
+    println(t)
+    println(t.asInstanceOf[Node[Symbol]].layoutBinaryTree2)
   } */
 }
 
@@ -133,6 +133,33 @@ case class Node[+T](value: T, left: Tree[T], right: Tree[T]) extends Tree[T] {
     val (right2, x3) = right.layoutBinaryTree(x2 + 1, y + 1)
     (new PositionedNode(value, left2, right2, x2, y), x3)
   }
+  def height: Int = 1 + math.max(left.height, right.height)
+  def leftMostDepth: Int = 1 + left.leftMostDepth
+  def layoutBinaryTree2: Tree[T] = {
+    val h = height
+    /*
+    delta(y) = if(h == y) 0 else pow2(h - y - 1)
+    offset(lm) = delta(1) + ... + delta(lm - 1) + 1
+               = 2^(h - lm) + ... + 2^(h - 1) + 1
+               = 2^(h - 1) - 2^(h - lm) + 1
+    */
+    val xOffset = pow2(h - 1) - pow2(h - leftMostDepth) + 1
+    layoutBinaryTree2(xOffset, 1, h)
+  }
+  def layoutBinaryTree2(x: Int, y: Int, h: Int): Tree[T] = {
+    // println(s"layout $value $x $y $h")
+    val delta = if(h == y) 0 else pow2(h - y - 1)
+    new PositionedNode(value, 
+      left.layoutBinaryTree2(x - delta, y + 1, h), 
+      right.layoutBinaryTree2(x + delta, y + 1, h), x, y)
+  }
+  /* def layoutBinaryTree2b(x: Int, y: Int, h: Int): (Tree[T], Int) = {
+    val delta = if(h == y) 0 else pow2(h - y - 1)
+    // println(s"layout $value $x $y $h delta $delta")
+    val (left2, x2) = left.layoutBinaryTree2b(x, y + 1, h)
+    val (right2, x3) = right.layoutBinaryTree2b(x2 + delta, y + 1, h)
+    (new PositionedNode(value, left2, right2, x2, y), x2 + 2 * delta)
+  } */
   override def toString = s"T($value $left $right)"
 }
 
@@ -146,6 +173,9 @@ case object End extends Tree[Nothing] {
   def internalList = Nil
   def atLevel(d: Int) = Nil
   def layoutBinaryTree(x: Int, y: Int) = (End, x)
+  def layoutBinaryTree2(x: Int, y: Int, h: Int): Tree[Nothing] = End
+  def height: Int = 0
+  def leftMostDepth: Int = 0
   override def toString = "."
 }
 
