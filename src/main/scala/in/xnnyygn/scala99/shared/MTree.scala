@@ -9,7 +9,7 @@ case class MTree[+A](value: A, children: List[MTree[A]] = Nil) {
     children.foldLeft(0)((r, c) => r + c.nodeCount + c.internalPathLength) */
   // calculate by depth
   def internalPathLength(d: Int): Int = d + children.foldLeft(0)(_ + _.internalPathLength(d + 1))
-
+  def postorder: List[A] = children.flatMap(_.postorder) ::: List(value)
   // override def toString = "M(" + value + " {" + children.mkString(",") + "})"
   override def toString: String = value.toString + children.mkString + "^"
 }
