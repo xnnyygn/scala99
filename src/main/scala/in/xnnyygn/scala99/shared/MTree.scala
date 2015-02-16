@@ -10,6 +10,10 @@ case class MTree[+A](value: A, children: List[MTree[A]] = Nil) {
   // calculate by depth
   def internalPathLength(d: Int): Int = d + children.foldLeft(0)(_ + _.internalPathLength(d + 1))
   def postorder: List[A] = children.flatMap(_.postorder) ::: List(value)
+  def lispyTree: String = children match {
+    case Nil => value.toString
+    case _ => "(" + value + " " + children.map(_.lispyTree).mkString(" ") + ")"
+  }
   // override def toString = "M(" + value + " {" + children.mkString(",") + "})"
   override def toString: String = value.toString + children.mkString + "^"
 }
@@ -62,14 +66,29 @@ object MTree {
 
     def value = liternal(_ != '^', "value")
     def mtree: SyntaxRule[MTree[Char]] = (
-      value + repeat(mtree) + liternal('^')
-    ).map{case ((v, children), _) => MTree(v, children)}
+      value + repeat(mtree) <+ liternal('^')
+    ).map{case (v, children) => MTree(v, children)}
 
     mtree(s, 0)._1
   }
 
+
+  def fromLispyString(s: String): MTree[Char] = {
+    import SyntaxRule._
+
+    def value = liternal(c => 'a' <= c && c <= 'z', "value")
+    def treeWithChildren: SyntaxRule[MTree[Char]] = 
+      (liternal('(') +> value + repeat(liternal(' ') +> lispy) <+ liternal(')')).map{
+        case (v, children) => MTree(v, children)
+      }
+    def lispy = value.map(MTree(_)) or treeWithChildren
+
+    lispy(s, 0)._1
+  }
+
   /* def main(args: Array[String]): Unit = {
     println(string2MTree("afg^^c^bd^e^^^"))
+    println(fromLispyString("(a (f g) c (b d e))"))
   } */
   
 }
