@@ -20,10 +20,14 @@ abstract class GraphBase[T, U] {
   // otherwise returns None.
   def edgeTarget(e: Edge, n: Node): Option[Node]
 
-  override def equals(o: Any) = o match {
-    case g: GraphBase[_,_] => (nodes.keys == g.nodes.keys &&
-                               edges.map(_.toTuple) == g.edges.map(_.toTuple))
-    case _ => false
+  override def equals(o: Any) = {
+    val equality = o match {
+      case g: GraphBase[_,_] => (nodes.keys == g.nodes.keys &&
+                                 edges.map(_.toTuple).toSet == g.edges.map(_.toTuple).toSet)
+      case _ => false
+    }
+    // println(s"test equality of $this and $o => $equality")
+    equality
   }
   def addNode(value: T) = {
     val n = new Node(value)
@@ -67,7 +71,6 @@ abstract class GraphBase[T, U] {
     val na = nodes(a)
     na.adj.map(edgeTarget(_, na).get.value).flatMap(b => findPaths(b, a).map(a :: _)).filter(_.length > 3)
   }
-
 }
 
 class Graph[T, U] extends GraphBase[T, U] {
@@ -89,6 +92,45 @@ class Graph[T, U] extends GraphBase[T, U] {
     nodes(n1).adj = e :: nodes(n1).adj
     nodes(n2).adj = e :: nodes(n2).adj
   }
+
+  /* def spanningTrees: List[Graph[T, U]] = {
+    val nodeCount = nodes.size
+    val vs = nodes.keys.toList
+    def spanningTreesR(a: T, ns: Set[T], es: List[(T, T, U)]): List[Graph[T, U]] = {
+      // println(s"spanning current $a nodes $ns edges $es")
+      val n = nodes(a)
+      val available = n.adj.map(e => (e.toTuple, edgeTarget(e, n).get.value)).filterNot(en => ns.contains(en._2)) 
+      // println("available " + available.map(_._2))
+      available match {
+        case Nil if ns.size == nodeCount - 1 => List(Graph.termLabel(vs, es.reverse))
+        case c => c.flatMap{case (e, n2) => spanningTreesR(n2, ns + a, e :: es)}
+      }
+    }
+    nodes.keys.toList.flatMap(a => spanningTreesR(a, Set[T](), Nil)).toSet.toList
+  } */
+  def spanningTrees: List[Graph[T, U]] = {
+    val nodeCount = nodes.size
+    val nodeValues = nodes.keys.toList
+    def spanningTreesR(graphEdges: Set[Edge], treeNodes: Set[Node], treeEdges: List[Edge]): Traversable[Graph[T, U]] = {
+      // println(s"spanning graph edges $graphEdges tree nodes $treeNodes tree edges $treeEdges")
+      if(treeNodes.size == nodeCount) List(Graph.termLabel(nodeValues, treeEdges.map(_.toTuple)))
+      else if(graphEdges == Nil) Nil 
+      else graphEdges.filter(edge => 
+        treeNodes.isEmpty || !(treeNodes.contains(edge.n1) == treeNodes.contains(edge.n2))
+        // one node of edge is in tree
+      ).flatMap(edge =>
+        spanningTreesR(
+          graphEdges - edge,
+          treeNodes + edge.n1 + edge.n2,
+          edge :: treeEdges
+        )
+      )
+    }
+    spanningTreesR(edges.toSet, Set[Node](), Nil).toSet.toList
+  }
+
+  def isTree: Boolean = spanningTrees.length == 1
+  def isConnected: Boolean = spanningTrees.length > 0
 
   override def toString: String = {
     (nodes.values.filter(_.adj.isEmpty).map(_.value).toList ::: 
@@ -171,6 +213,13 @@ object Graph extends GraphObjBase {
     }
     termLabel(nodes.toList, edges.toList)
   }
+
+  /* def main(args: Array[String]): Unit = {
+    println(Graph.termLabel(List('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'),
+           List(('a', 'b', 0), ('a', 'd', 0), ('b', 'c', 0), ('b', 'e', 0),
+                ('c', 'e', 0), ('d', 'e', 0), ('d', 'f', 0), ('d', 'g', 0),
+                ('e', 'h', 0), ('f', 'g', 0), ('g', 'h', 0))).spanningTrees)
+  } */
 }
 
 object Digraph extends GraphObjBase {
