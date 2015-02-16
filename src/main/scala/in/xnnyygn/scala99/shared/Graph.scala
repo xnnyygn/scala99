@@ -38,13 +38,36 @@ abstract class GraphBase[T, U] {
     nodes.toList.map{case (k1, n1) => (k1, n1.adj.map(e => (e.n2.value, e.value)))}
   }
 
-  def findPaths(start: T, end: T): List[List[T]] = findPaths(start, end, Nil)
-  def findPaths(start: T, end: T, r: List[T]): List[List[T]] = {
-    if(start == end) List(List(end))
-    else nodes(start).neighbors.map(_.value).filterNot(r.contains(_)).flatMap{
-      v => findPaths(v, end).map(start :: _)
+  def findPaths(start: T, end: T): List[List[T]] = {
+    def findPathsR(a: T, b: T, r: List[T]): List[List[T]] = {
+      if(a == b) List(List(b))
+      else nodes(a).neighbors.map(_.value).filterNot(r.contains(_)).flatMap{
+        v => findPathsR(v, b, a :: r).map(a :: _)
+      }
     }
+    findPathsR(start, end, Nil)
   }
+  
+  def findCycles2(start: T): List[List[T]] = {
+    def findCyclesR(a: T, r: List[T]): List[List[T]] = {
+      // println(s"find cycles from $start current $a path $r")
+      val na = nodes(a)
+      na.adj.map(edgeTarget(_, na).get.value).flatMap{v =>
+        // println(s"check node $v")
+        if(v == start && r.length > 1) Some((start :: a :: r).reverse)
+        else if(r.contains(v)) None
+        else findCyclesR(v, a :: r)
+      }
+
+    }
+    findCyclesR(start, Nil)
+  }
+
+  def findCycles(a: T): List[List[T]] = {
+    val na = nodes(a)
+    na.adj.map(edgeTarget(_, na).get.value).flatMap(b => findPaths(b, a).map(a :: _)).filter(_.length > 3)
+  }
+
 }
 
 class Graph[T, U] extends GraphBase[T, U] {
@@ -53,10 +76,12 @@ class Graph[T, U] extends GraphBase[T, U] {
     case _ => false
   }
 
-  def edgeTarget(e: Edge, n: Node): Option[Node] =
+  def edgeTarget(e: Edge, n: Node): Option[Node] = {
+    // println(s"get target of edge $e of node $n")
     if (e.n1 == n) Some(e.n2)
     else if (e.n2 == n) Some(e.n1)
     else None
+  }
 
   def addEdge(n1: T, n2: T, value: U) = {
     val e = new Edge(nodes(n1), nodes(n2), value)
