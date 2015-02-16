@@ -132,9 +132,36 @@ class Graph[T, U] extends GraphBase[T, U] {
   def isTree: Boolean = spanningTrees.length == 1
   def isConnected: Boolean = spanningTrees.length > 0
 
+  def minimalSpanningTree(implicit cmp: Ordering[U]): Option[Graph[T, U]] = {
+    val nodeCount = nodes.size
+    def minimalSpanningTreeR(
+      graphEdges: Set[Edge], treeNodes: Set[Node], treeEdges: List[Edge]): Option[Graph[T, U]] = {
+      if(treeNodes.size == nodeCount) Some(Graph.termLabel(nodes.keys.toList, treeEdges.map(_.toTuple)))
+      else if(graphEdges == Nil) None
+      else {
+        val minEdge = graphEdges.filter(edge => 
+          // one node in tree, the other not
+          !(treeNodes.contains(edge.n1) == treeNodes.contains(edge.n2))
+        ).reduceLeft{(edge1, edge2) => 
+          // find lowest cost
+          if(cmp.lt(edge1.value, edge2.value)) edge1 else edge2
+        }
+        minimalSpanningTreeR(
+          graphEdges - minEdge,
+          treeNodes + minEdge.n1 + minEdge.n2,
+          minEdge :: treeEdges
+        )
+      }
+    }
+    minimalSpanningTreeR(edges.toSet, Set(nodes.values.head), Nil)
+  }
+
   override def toString: String = {
     (nodes.values.filter(_.adj.isEmpty).map(_.value).toList ::: 
-      edges.map(e => e.n1.value + "-" + e.n2.value)).mkString("[", ", ", "]")
+      edges.map(e => 
+        if(e.value == ()) e.n1.value + "-" + e.n2.value
+        else e.n1.value + "-" + e.n2.value + "/" + e.value
+      )).mkString("[", ", ", "]")
   }
 }
 
@@ -195,17 +222,21 @@ object Graph extends GraphObjBase {
     g
   }
   // [b-c, f-c, g-h, d, f-b, k-f, h-g]
-  def fromString(s: String): Graph[String, Unit] = {
+  def fromString(s: String): Graph[String, Unit] = fromString2(s)(_ => ())
+  def fromStringInt(s: String): Graph[String, Int] = fromString2(s)(_.toInt)
+  def fromString2[A](s: String)(f: String => A): Graph[String, A] = {
     val l = s.length
     if(l < 2 || (s(0) != '[' && s(l - 1) != ']')) throw new IllegalArgumentException("expect [n1-n2,*nk-nl]")
-    val edges = mutable.ListBuffer[(String, String, Unit)]()
+    val edges = mutable.ListBuffer[(String, String, A)]()
     val nodes = mutable.Set[String]()
-    s.substring(1, l - 1).split(", ").foreach{p =>
+    s.substring(1, l - 1).split(", ").foreach{p => 
       if(p.length == 1) nodes += p
       else {
         val n1 = p(0).toString
         val n2 = p(2).toString
-        val edge = (n1, n2, ())
+        val edge = (n1, n2, 
+          if(p.length > 4) f(p.substring(4)) else f("")
+        )
         edges += edge
         nodes += n1
         nodes += n2
