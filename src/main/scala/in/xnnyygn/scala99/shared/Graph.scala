@@ -37,6 +37,14 @@ abstract class GraphBase[T, U] {
   def toAdjacentForm: List[(T, List[(T, U)])] = {
     nodes.toList.map{case (k1, n1) => (k1, n1.adj.map(e => (e.n2.value, e.value)))}
   }
+
+  def findPaths(start: T, end: T): List[List[T]] = findPaths(start, end, Nil)
+  def findPaths(start: T, end: T, r: List[T]): List[List[T]] = {
+    if(start == end) List(List(end))
+    else nodes(start).neighbors.map(_.value).filterNot(r.contains(_)).flatMap{
+      v => findPaths(v, end).map(start :: _)
+    }
+  }
 }
 
 class Graph[T, U] extends GraphBase[T, U] {
