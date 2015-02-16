@@ -1,17 +1,21 @@
 package in.xnnyygn.scala99.shared
 
+import scala.language.implicitConversions
+
 case class MTree[+A](value: A, children: List[MTree[A]] = Nil) {
   def nodeCount: Int = children.foldLeft(1)(_ + _.nodeCount)
+  def internalPathLength: Int = internalPathLength(0)
+  /* def internalPathLength: Int = 
+    children.foldLeft(0)((r, c) => r + c.nodeCount + c.internalPathLength) */
+  // calculate by depth
+  def internalPathLength(d: Int): Int = d + children.foldLeft(0)(_ + _.internalPathLength(d + 1))
 
   // override def toString = "M(" + value + " {" + children.mkString(",") + "})"
   override def toString: String = value.toString + children.mkString + "^"
 }
 
 object MTree {
-  /* implicit def stringToMTreeHelper(s: String): MTreeHelper = new MTreeHelper(s)
-  class MTreeHelper(s: String) {
 
-  } */
   // BNF
   // s     = mtree
   // mtree = value mtree* ^
@@ -53,7 +57,7 @@ object MTree {
     parseMTree(0)._1
   } */
 
-  def string2MTree(s: String): MTree[Char] = {
+  implicit def string2MTree(s: String): MTree[Char] = {
     import SyntaxRule._
 
     def value = liternal(_ != '^', "value")
@@ -64,8 +68,8 @@ object MTree {
     mtree(s, 0)._1
   }
 
-  def main(args: Array[String]): Unit = {
+  /* def main(args: Array[String]): Unit = {
     println(string2MTree("afg^^c^bd^e^^^"))
-  }
+  } */
   
 }
