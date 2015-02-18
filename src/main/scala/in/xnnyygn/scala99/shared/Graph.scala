@@ -6,11 +6,16 @@ import scala.collection.mutable
 abstract class GraphBase[T, U] {
   case class Edge(n1: Node, n2: Node, value: U) {
     def toTuple = (n1.value, n2.value, value)
+    override def toString = value match {
+      case () => s"$n1-$n2"
+      case _ => s"$n1-$n2/$value"
+    }
   }
   case class Node(value: T) {
     var adj: List[Edge] = Nil
     // neighbors are all nodes adjacent to this node.
     def neighbors: List[Node] = adj.map(edgeTarget(_, this).get)
+    override def toString = value.toString
   }
 
   var nodes: Map[T, Node] = Map()
@@ -156,6 +161,74 @@ class Graph[T, U] extends GraphBase[T, U] {
     minimalSpanningTreeR(edges.toSet, Set(nodes.values.head), Nil)
   }
 
+  def isIsomorphicTo(g2: Graph[T, U]): Boolean = {
+    def isValidMapping(mapping: Map[Node, g2.Node]): Boolean = {
+      println(s"test mapping $mapping")
+      this.edges.forall {e1 =>
+        val n21 = mapping(e1.n1)
+        val n22 = mapping(e1.n2)
+        g2.edges.exists(e2 => 
+          (e2.n1 == n21 && e2.n2 == n22) || (e2.n1 == n22 && e2.n2 == n21)
+        )
+      }
+    }
+    val nodes1 = this.nodes.values.toList
+    val nodes2 = g2.nodes.values.toList
+    if(nodes1.size != nodes2.size || this.edges.size != g2.edges.size) false
+    else nodes1.permutations.exists(nodes1s => isValidMapping(nodes1s.zip(nodes2).toMap))
+  }
+
+  /* def isIsomorphicTo(g2: Graph[T, U]): Boolean = {
+    def isIsomorphicToR(edges1: Set[Edge], edges2: Set[g2.Edge], mapping: Map[Node, g2.Node]): Boolean = {
+      println(s"isomorphic edges 1 $edges1 edges 2 $edges2 mapping $mapping")
+      def isIsomorphicToROneSide(e1: Edge, n1y: Node, n2x: g2.Node): Boolean = {
+        val edges2f = edges2.flatMap{e2 => 
+          if(e2.n1 == n2x) Some(e2, e2.n2)
+          else if(e2.n2 == n2x) Some(e2, e2.n1)
+          else None
+        }
+        if(edges2f.isEmpty) false
+        else edges2f.exists{
+          case (e2, n2y) => isIsomorphicToR(edges1 - e1, edges2 - e2, mapping + (n1y -> n2y))
+        }
+      }
+
+      if(edges1.isEmpty && edges2.isEmpty) true
+      else edges1.exists (e1 => (mapping.get(e1.n1), mapping.get(e1.n2)) match {
+        case (Some(n21), Some(n22)) => edges2.find(e2 => 
+          (e2.n1 == n21 && e2.n2 == n22) || (e2.n1 == n21 && e2.n2 == n22)
+        ) match {
+          case Some(e2) => isIsomorphicToR(edges1 - e1, edges2 - e2, mapping)
+          case _ => false
+        }
+        case (Some(n21), _) => isIsomorphicToROneSide(e1, e1.n2, n21)
+        case (_, Some(n22)) => isIsomorphicToROneSide(e1, e1.n1, n22)
+        case _ => edges2.exists {e2 =>
+          isIsomorphicToR(edges1 - e1, edges2 - e2, 
+            mapping + (e1.n1 -> e2.n1) + (e1.n2 -> e2.n2)) ||
+          isIsomorphicToR(edges1 - e1, edges2 - e2, 
+            mapping + (e1.n1 -> e2.n2) + (e1.n2 -> e2.n1))
+        }
+      })
+    }
+
+    def singleNodes[N](ns: Traversable[N]): List[N] = {
+      ns.groupBy(identity).map(t => (t._1, t._2.size)).groupBy(
+        _._2).toList.sortBy(_._2.size).span(_._2.size == 1)._1.flatMap(_._2.keys)
+    }
+
+    val edges1 = this.edges.toSet
+    val edges2 = g2.edges.toSet
+    if(this.nodes.size != g2.nodes.size || edges1.size != edges2.size) false
+    else {
+      val singleNodes1 = singleNodes(this.edges.flatMap(e1 => List(e1.n1, e1.n2)))
+      val singleNodes2 = singleNodes(g2.edges.flatMap(e2 => List(e2.n1, e2.n2)))
+      println(s"single nodes $singleNodes1 $singleNodes2")
+      if(singleNodes1.size != singleNodes2.size) false
+      else isIsomorphicToR(edges1, edges2, singleNodes1.zip(singleNodes2).toMap)
+    }
+  } */
+
   override def toString: String = {
     (nodes.values.filter(_.adj.isEmpty).map(_.value).toList ::: 
       edges.map(e => 
@@ -250,6 +323,13 @@ object Graph extends GraphObjBase {
            List(('a', 'b', 0), ('a', 'd', 0), ('b', 'c', 0), ('b', 'e', 0),
                 ('c', 'e', 0), ('d', 'e', 0), ('d', 'f', 0), ('d', 'g', 0),
                 ('e', 'h', 0), ('f', 'g', 0), ('g', 'h', 0))).spanningTrees)
+    println(fromString("[a-g]").isIsomorphicTo(fromString("[1-2]")))
+    println(fromString("[a-b, b-c, a-c, a-d]").isIsomorphicTo(fromString("[1-3, 2-3, 3-4, 1-4]")))
+    // [a-g, a-h, a-i, b-g, b-h, b-j, c-g, c-i, c-j, d-h, d-i, d-j]
+    // [1-2, 1-4, 1-5, 2-6, 2-3, 3-4, 3-7, 4-8, 5-6, 5-8, 6-7, 7-8]
+    // cannot calculate in a regular time
+    //println(fromString("[a-g, a-h, a-i, b-g, b-h, b-j, c-g, c-i, c-j, d-h, d-i, d-j]").isIsomorphicTo(fromString(
+    //  "[1-2, 1-4, 1-5, 2-6, 2-3, 3-4, 3-7, 4-8, 5-6, 5-8, 6-7, 7-8]")))
   } */
 }
 
