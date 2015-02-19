@@ -15,6 +15,7 @@ abstract class GraphBase[T, U] {
     var adj: List[Edge] = Nil
     // neighbors are all nodes adjacent to this node.
     def neighbors: List[Node] = adj.map(edgeTarget(_, this).get)
+    def degree: Int = adj.size
     override def toString = value.toString
   }
 
@@ -229,6 +230,28 @@ class Graph[T, U] extends GraphBase[T, U] {
     }
   } */
 
+  def nodesByDegree: List[Node] = nodes.values.toList.sortWith(_.degree > _.degree)
+  def colorNodes: List[(Node, Int)] = {
+    def colorNodes1(uncoloredNodes: List[Node], color: Int, 
+      coloredNodes: List[(Node, Int)]): List[(Node, Int)] = colorNodes2(uncoloredNodes, color, Set[Node](), coloredNodes) match {
+      case (Nil, coloredNodes2) => coloredNodes2
+      case (skipNodes, coloredNodes2) => colorNodes1(skipNodes.reverse, color + 1, coloredNodes2)
+    }
+    def colorNodes2(uncoloredNodes: List[Node], color: Int, 
+      stopNodes: Set[Node], coloredNodes: List[(Node, Int)]): (List[Node], List[(Node, Int)]) = uncoloredNodes match {
+      case Nil => (Nil, coloredNodes)
+      case n :: others => {
+        if(stopNodes.contains(n)) {
+          val (skipNodes, coloredNodes2) = colorNodes2(others, color, stopNodes, coloredNodes)
+          (n :: skipNodes, coloredNodes2)
+        } else {
+          val (skipNodes, coloredNodes2) = colorNodes2(others, color, stopNodes ++ n.neighbors, coloredNodes)
+          (skipNodes, (n, color) :: coloredNodes2)
+        }
+      }
+    }
+    colorNodes1(nodesByDegree, 1, Nil)
+  }
   override def toString: String = {
     (nodes.values.filter(_.adj.isEmpty).map(_.value).toList ::: 
       edges.map(e => 
@@ -319,17 +342,22 @@ object Graph extends GraphObjBase {
   }
 
   /* def main(args: Array[String]): Unit = {
-    println(Graph.termLabel(List('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'),
-           List(('a', 'b', 0), ('a', 'd', 0), ('b', 'c', 0), ('b', 'e', 0),
-                ('c', 'e', 0), ('d', 'e', 0), ('d', 'f', 0), ('d', 'g', 0),
-                ('e', 'h', 0), ('f', 'g', 0), ('g', 'h', 0))).spanningTrees)
-    println(fromString("[a-g]").isIsomorphicTo(fromString("[1-2]")))
-    println(fromString("[a-b, b-c, a-c, a-d]").isIsomorphicTo(fromString("[1-3, 2-3, 3-4, 1-4]")))
-    // [a-g, a-h, a-i, b-g, b-h, b-j, c-g, c-i, c-j, d-h, d-i, d-j]
-    // [1-2, 1-4, 1-5, 2-6, 2-3, 3-4, 3-7, 4-8, 5-6, 5-8, 6-7, 7-8]
-    // cannot calculate in a regular time
-    //println(fromString("[a-g, a-h, a-i, b-g, b-h, b-j, c-g, c-i, c-j, d-h, d-i, d-j]").isIsomorphicTo(fromString(
-    //  "[1-2, 1-4, 1-5, 2-6, 2-3, 3-4, 3-7, 4-8, 5-6, 5-8, 6-7, 7-8]")))
+    println(Graph.fromString("[a-b, b-c, a-c, a-d]").colorNodes)
+  } */
+
+  /* def main(args: Array[String]): Unit = {
+    def permutations[A](xs: List[A]): List[List[A]] = xs match {
+      case Nil => List(Nil)
+      case _ => List.range(0, xs.length).flatMap{i =>
+        xs.splitAt(i) match {
+          case (pre, x :: post) => permutations(pre ::: post).map(x :: _)
+          case _ => throw new IllegalStateException
+        }
+      }
+    }
+
+    def permutations2[A](xs: List[A])
+    println(permutations(List(1, 2, 3)))
   } */
 }
 
