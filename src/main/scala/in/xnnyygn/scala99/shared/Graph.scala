@@ -252,6 +252,16 @@ class Graph[T, U] extends GraphBase[T, U] {
     }
     colorNodes1(nodesByDegree, 1, Nil)
   }
+
+  def nodesByDepthFrom(s: T): List[T] = {
+    def nodesByDepthFrom(n: Node, stopNodes: Set[Node]): List[T] = {
+      val neighbors = n.neighbors
+      val nextStopNodes = stopNodes ++ neighbors
+      n.value :: neighbors.filterNot(stopNodes.contains).flatMap(nodesByDepthFrom(_, nextStopNodes))
+    }
+    val n = nodes(s)
+    nodesByDepthFrom(nodes(s), Set(n)).reverse
+  }
   override def toString: String = {
     (nodes.values.filter(_.adj.isEmpty).map(_.value).toList ::: 
       edges.map(e => 
@@ -342,7 +352,7 @@ object Graph extends GraphObjBase {
   }
 
   /* def main(args: Array[String]): Unit = {
-    println(Graph.fromString("[a-b, b-c, a-c, a-d]").colorNodes)
+    println(Graph.fromString("[a-b, b-c, e, a-c, a-d]").nodesByDepthFrom("d"))
   } */
 
   /* def main(args: Array[String]): Unit = {
