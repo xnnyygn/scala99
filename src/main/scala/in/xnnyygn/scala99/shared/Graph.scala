@@ -252,15 +252,27 @@ class Graph[T, U] extends GraphBase[T, U] {
     }
     colorNodes1(nodesByDegree, 1, Nil)
   }
-
-  def nodesByDepthFrom(s: T): List[T] = {
-    def nodesByDepthFrom(n: Node, stopNodes: Set[Node]): List[T] = {
+  def nodesByDepthFrom(s: T): List[T] = nodesByDepthFrom(nodes(s)).map(_.value)
+  def nodesByDepthFrom(s: Node): List[Node] = {
+    def nodesByDepthFrom(n: Node, stopNodes: Set[Node]): List[Node] = {
       val neighbors = n.neighbors
       val nextStopNodes = stopNodes ++ neighbors
-      n.value :: neighbors.filterNot(stopNodes.contains).flatMap(nodesByDepthFrom(_, nextStopNodes))
+      n :: neighbors.filterNot(stopNodes.contains).flatMap(nodesByDepthFrom(_, nextStopNodes))
     }
-    val n = nodes(s)
-    nodesByDepthFrom(nodes(s), Set(n)).reverse
+    nodesByDepthFrom(s, Set(s)).reverse
+  }
+  def splitGraph: List[Graph[T, U]] = {
+    def buildSubGraph(ns: List[Node]): Graph[T, U] = {
+      Graph.adjacentLabel(ns.map(n => (n.value, n.adj.map(e => (edgeTarget(e, n).get.value, e.value)))))
+    }
+    def splitGraphR(ns: Set[Node]): List[Graph[T, U]] = {
+      if(ns.isEmpty) Nil
+      else {
+        val ns2 = nodesByDepthFrom(ns.head)
+        buildSubGraph(ns2) :: splitGraphR(ns -- ns2)
+      }
+    }
+    splitGraphR(nodes.values.toSet)
   }
   override def toString: String = {
     (nodes.values.filter(_.adj.isEmpty).map(_.value).toList ::: 
@@ -352,7 +364,7 @@ object Graph extends GraphObjBase {
   }
 
   /* def main(args: Array[String]): Unit = {
-    println(Graph.fromString("[a-b, b-c, e, a-c, a-d]").nodesByDepthFrom("d"))
+    println(Graph.fromString("[a-b, c, d-c]").splitGraph)
   } */
 
   /* def main(args: Array[String]): Unit = {
