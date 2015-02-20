@@ -2,6 +2,7 @@ package in.xnnyygn.scala99.shared
 
 import scala.language.higherKinds
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 abstract class GraphBase[T, U] {
   case class Edge(n1: Node, n2: Node, value: U) {
@@ -274,6 +275,55 @@ class Graph[T, U] extends GraphBase[T, U] {
     }
     splitGraphR(nodes.values.toSet)
   }
+  def isBipartite2: Boolean = {
+    def tryColorGraph1(ns: Set[Node]): Unit = {
+      // println(s"try color graph 1 $ns $color")
+      if(!ns.isEmpty) tryColorGraph1(ns -- 
+        tryColorGraph2(ns.head, true, Map[Node, Boolean]()))
+    }
+    def tryColorGraph2(n: Node, color: Boolean, nodeColors: Map[Node, Boolean]): List[Node] = {
+      // println(s"try color graph 2 $n $color $nodeColors")
+      val nodeColors2 = nodeColors + (n -> color)
+      val (colored, uncolored) = n.neighbors.partition(nodeColors2.contains)
+      colored.find(n2 => nodeColors2(n2) == color) match {
+        case Some(n2) => throw new IllegalStateException(s"$n2 should be $color")
+        case _ => n :: uncolored.flatMap(n2 => tryColorGraph2(n2, !color, nodeColors2))
+      }
+    }
+
+    try {
+      tryColorGraph1(nodes.values.toSet)
+      true
+    } catch {
+      case NonFatal(e) => println(e); false
+    }
+  }
+
+  def isBipartite: Boolean = {
+    nodes.isEmpty || splitGraph.forall(_.isBipartiteInternal)
+  }
+  def isBipartiteInternal: Boolean = {
+    // println(s"check if bigraph $this")
+    def isBipartiteInternalR(odd: List[Node], even: List[Node], oddSeen: Set[Node], evenSeen: Set[Node]): Boolean = {
+      // println(s"test classification $odd $even $oddSeen $evenSeen")
+      (odd, even) match {
+        case (Nil, Nil) => true
+        case (n1 :: oddTail, _) => {
+          val neighbors = n1.neighbors
+          // println(s"neighbors of $n1 is $neighbors")
+          neighbors.forall(!oddSeen(_)) &&
+            isBipartiteInternalR(oddTail, even.union(neighbors.filterNot(evenSeen(_))), oddSeen + n1, evenSeen ++ neighbors)
+        }
+        case (Nil, n2 :: evenTail) => {
+          val neighbors = n2.neighbors
+          // println(s"neighbors of $n2 is $neighbors")
+          neighbors.forall(!evenSeen(_)) &&
+            isBipartiteInternalR(neighbors.filterNot(oddSeen(_)), evenTail, oddSeen ++ neighbors, evenSeen + n2)
+        }
+      }
+    }
+    isBipartiteInternalR(List(nodes.values.head), Nil, Set[Node](), Set[Node]())
+  }
   override def toString: String = {
     (nodes.values.filter(_.adj.isEmpty).map(_.value).toList ::: 
       edges.map(e => 
@@ -363,24 +413,6 @@ object Graph extends GraphObjBase {
     termLabel(nodes.toList, edges.toList)
   }
 
-  /* def main(args: Array[String]): Unit = {
-    println(Graph.fromString("[a-b, c, d-c]").splitGraph)
-  } */
-
-  /* def main(args: Array[String]): Unit = {
-    def permutations[A](xs: List[A]): List[List[A]] = xs match {
-      case Nil => List(Nil)
-      case _ => List.range(0, xs.length).flatMap{i =>
-        xs.splitAt(i) match {
-          case (pre, x :: post) => permutations(pre ::: post).map(x :: _)
-          case _ => throw new IllegalStateException
-        }
-      }
-    }
-
-    def permutations2[A](xs: List[A])
-    println(permutations(List(1, 2, 3)))
-  } */
 }
 
 object Digraph extends GraphObjBase {
