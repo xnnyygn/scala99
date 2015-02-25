@@ -31,8 +31,8 @@ object P94 {
     kRegularR(1, Map(), Nil)
   }
 
-  def main(args: Array[String]): Unit = {
+  /* def main(args: Array[String]): Unit = {
     println(kRegular(3, 2))
-  }
+  } */
 
 }
